@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Badge,
   Box,
@@ -15,15 +15,26 @@ import {
 } from "@mui/material";
 import MailIcon from "@mui/icons-material/Mail";
 import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
-import CheckIcon from "@mui/icons-material/Check";
-import { useNotificationCenter } from "react-toastify/addons/use-notification-center";
+import axios from "axios";
 
 const Notification = () => {
-  const { notifications, clear, markAllAsRead, markAsRead, unreadCount } =
-    useNotificationCenter();
+  const [notifications, setNotifications] = useState([]);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get("http://localhost:4001/notifications");
+        setNotifications(response.data);
+      } catch (error) {
+        console.error("Error fetching notifications", error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
 
   const toggleNotificationCenter = (event) => {
     setAnchorEl(event.currentTarget);
@@ -34,10 +45,25 @@ const Notification = () => {
     setShowUnreadOnly(!showUnreadOnly);
   };
 
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:4001");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setNotifications((prevNotifications) => [data, ...prevNotifications]);
+    };
+
+    // return () => {
+    //   setTimeout(() => {
+    //     ws.close();
+    //   }, 1000); // Delay closing the connection by 1 second
+    // };
+  }, []);
+
   return (
     <Box sx={{ margin: "8px" }}>
       <IconButton size="large" onClick={toggleNotificationCenter}>
-        <Badge badgeContent={unreadCount} color="primary">
+        <Badge badgeContent={notifications.length} color="primary">
           <MailIcon color="action" />
         </Badge>
       </IconButton>
@@ -88,7 +114,7 @@ const Notification = () => {
                 spacing={2}
               >
                 {(!notifications.length ||
-                  (unreadCount === 0 && showUnreadOnly)) && (
+                  (notifications.length === 0 && showUnreadOnly)) && (
                   <h4>
                     Your queue is empty! you are all set{" "}
                     <span role="img" aria-label="celebration">
@@ -101,24 +127,21 @@ const Notification = () => {
                   : notifications
                 ).map((notification, index) => (
                   <Alert
-                    key={notification.id}
-                    severity={notification.type || "info"}
+                    key={index}
+                    severity="info"
                     action={
-                      notification.read ? (
-                        <CheckIcon />
-                      ) : (
-                        <IconButton
-                          color="primary"
-                          aria-label="mark as read"
-                          component="span"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <MarkChatReadIcon />
-                        </IconButton>
-                      )
+                      <IconButton
+                        color="primary"
+                        aria-label="mark as read"
+                        component="span"
+                      >
+                        <MarkChatReadIcon />
+                      </IconButton>
                     }
                   >
-                    {notification.content}
+                    <div
+                      dangerouslySetInnerHTML={{ __html: notification.diff }}
+                    />
                   </Alert>
                 ))}
               </Stack>
@@ -131,12 +154,8 @@ const Notification = () => {
                   alignItems: "center",
                 }}
               >
-                <Button variant="contained" onClick={clear}>
-                  Clear All
-                </Button>
-                <Button variant="contained" onClick={markAllAsRead}>
-                  Mark all as read
-                </Button>
+                <Button variant="contained">Clear All</Button>
+                <Button variant="contained">Mark all as read</Button>
               </Box>
             </Box>
           </Fade>

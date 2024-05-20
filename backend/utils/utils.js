@@ -1,6 +1,6 @@
-import { diffWords } from "diff";
+const { diffWords } = require("diff");
 
-export const compareAndNotify = (paragraph1, paragraph2) => {
+const compareAndNotify = (paragraph1, paragraph2) => {
   const diffResult = diffWords(paragraph1, paragraph2);
   let diffOutput = "";
   diffResult.forEach((part) => {
@@ -14,3 +14,5 @@ export const compareAndNotify = (paragraph1, paragraph2) => {
   });
   return diffOutput;
 };
+
+module.exports = { compareAndNotify };
