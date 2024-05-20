@@ -1,29 +1,16 @@
 import React, { useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Box, TextField, Button, AppBar, Toolbar } from "@mui/material";
 import Notification from "./Notification";
-import { diffWords } from "diff";
+import { showToastWithDiff } from "./utils";
 
 function App() {
   const [paragraph1, setParagraph1] = useState("");
   const [paragraph2, setParagraph2] = useState("");
 
   const handleCompare = () => {
-    const diffResult = diffWords(paragraph1, paragraph2);
-    let diffOutput = "";
-    diffResult.forEach((part) => {
-      if (part.added) {
-        diffOutput += `<span style="background-color: #d4edda;">${part.value}</span>`;
-      } else if (part.removed) {
-        diffOutput += `<span style="text-decoration: line-through; color: #f8d7da;">${part.value}</span>`;
-      } else {
-        diffOutput += `<span>${part.value}</span>`;
-      }
-    });
-    toast(<div dangerouslySetInnerHTML={{ __html: diffOutput }} />, {
-      type: "info",
-    });
+    showToastWithDiff(paragraph1, paragraph2);
   };
 
   return (
@@ -31,11 +18,7 @@ function App() {
       <Box style={{ marginBottom: "50px" }}>
         <AppBar>
           <Toolbar>
-            <Notification
-              style={{ zIndex: "999" }}
-              paragraph1={paragraph1}
-              paragraph2={paragraph2}
-            />
+            <Notification />
             <ToastContainer position="bottom-right" newestOnTop />
           </Toolbar>
         </AppBar>

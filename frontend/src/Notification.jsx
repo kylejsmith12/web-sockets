@@ -17,10 +17,8 @@ import MailIcon from "@mui/icons-material/Mail";
 import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
 import CheckIcon from "@mui/icons-material/Check";
 import { useNotificationCenter } from "react-toastify/addons/use-notification-center";
-import { toast } from "react-toastify";
-import { diffWords } from "diff";
 
-const Notification = ({ paragraph1, paragraph2 }) => {
+const Notification = () => {
   const { notifications, clear, markAllAsRead, markAsRead, unreadCount } =
     useNotificationCenter();
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
@@ -45,7 +43,7 @@ const Notification = ({ paragraph1, paragraph2 }) => {
       </IconButton>
 
       <Popper
-        style={{ zIndex: "999" }}
+        style={{ zIndex: 999 }}
         open={isOpen}
         anchorEl={anchorEl}
         transition
@@ -120,13 +118,7 @@ const Notification = ({ paragraph1, paragraph2 }) => {
                       )
                     }
                   >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          notification.content.props.dangerouslySetInnerHTML
-                            .__html,
-                      }}
-                    />
+                    {notification.content}
                   </Alert>
                 ))}
               </Stack>
