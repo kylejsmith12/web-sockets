@@ -52,7 +52,7 @@ const Notification = () => {
 
   useEffect(() => {
     console.log("in here");
-    const ws = new WebSocket("ws://localhost:4001");
+    const ws = new WebSocket("ws://localhost:4001/api");
     console.log("test: ", ws);
 
     ws.onmessage = (event) => {

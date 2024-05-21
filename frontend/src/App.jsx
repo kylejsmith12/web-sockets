@@ -11,8 +11,16 @@ function App() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:4001");
+    const ws = new WebSocket("ws://localhost:4001/api");
     setSocket(ws);
+
+    ws.addEventListener("open", function (event) {
+      console.log("connected to ws server");
+    });
+
+    ws.addEventListener("message", function (event) {
+      console.log("message from server", event.data);
+    });
 
     return () => {
       // Commenting out the code to close the connection after 1 second
