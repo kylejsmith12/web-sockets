@@ -1,30 +1,18 @@
-// In routes/api.js
-
 const express = require("express");
 const pool = require("../db");
-const WebSocket = require("ws");
-const { setupWebSocketServer } = require("../websocket");
+const { v4: uuidv4 } = require("uuid");
 const compareUtils = require("../utils/compareUtils");
+const { notifyClients } = require("../websocket");
 
 const router = express.Router();
-let wss; // Declare wss variable here
-
-router.use((req, res, next) => {
-  // Ensure WebSocket server is initialized before setting up routes
-  if (!wss) {
-    const server = req.app.get("server");
-    wss = setupWebSocketServer(server);
-  }
-  next();
-});
 
 router.post("/compare", async (req, res) => {
-  const { id, paragraph1, paragraph2 } = req.body;
+  const { paragraph1, paragraph2 } = req.body;
+  const id = uuidv4();
 
   // Compare paragraphs using compareUtils
   const diff = compareUtils.compareAndNotify(paragraph1, paragraph2);
 
-  // Insert comparison into database
   const query = `
     INSERT INTO comparisons (id, paragraph1, paragraph2, diff, created_at)
     VALUES ($1, $2, $3, $4, NOW()) RETURNING *;
@@ -33,14 +21,13 @@ router.post("/compare", async (req, res) => {
 
   try {
     const result = await pool.query(query, values);
-
-    // Notify clients about the comparison
     notifyClients(result.rows[0]);
-
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("Error processing comparison:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
 });
 
@@ -58,14 +45,5 @@ router.get("/notifications", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// Function to notify clients
-const notifyClients = (data) => {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
-  });
-};
 
 module.exports = router;

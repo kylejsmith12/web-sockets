@@ -1,33 +1,22 @@
 const WebSocket = require("ws");
 
-const setupWebSocketServer = (server) => {
-  const wss = new WebSocket.Server({ server });
+let wss;
+
+function setupWebSocketServer(server) {
+  wss = new WebSocket.Server({ server });
 
   wss.on("connection", (ws) => {
     console.log("New client connected");
-
-    ws.on("message", (message) => {
-      console.log(`Received message: ${message}`);
-      // Handle incoming messages from clients
-      wss.clients.forEach(function each(client) {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send("something");
-        }
-      });
-    });
-
-    ws.on("close", () => {
-      console.log("Client disconnected");
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-      // Handle WebSocket errors
-    });
+    ws.on("close", () => console.log("Client disconnected"));
   });
+}
 
-  console.log("WebSocket server initialized");
-  return wss;
-};
+function notifyClients(data) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
 
-module.exports = { setupWebSocketServer };
+module.exports = { setupWebSocketServer, notifyClients };

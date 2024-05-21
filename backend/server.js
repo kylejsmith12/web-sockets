@@ -13,7 +13,7 @@ app.use(express.json());
 app.use("/api", routes); // Use routes with /api prefix
 
 const server = http.createServer(app);
-const wss = setupWebSocketServer(server); // Initialize WebSocket server
+setupWebSocketServer(server); // Initialize WebSocket server
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

@@ -9,19 +9,17 @@ import { compareAndNotify } from "./utils";
 function App() {
   const [paragraph1, setParagraph1] = useState("");
   const [paragraph2, setParagraph2] = useState("");
-  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:4001");
-    setSocket(ws);
 
-    ws.addEventListener("open", function (event) {
+    ws.addEventListener("open", () => {
       console.log("Connected to WebSocket server");
     });
 
-    ws.addEventListener("message", function (event) {
-      console.log("Message from server", event.data);
-      showToast(event.data);
+    ws.addEventListener("message", (event) => {
+      const data = JSON.parse(event.data);
+      showToast(data.diff);
     });
 
     return () => {
@@ -41,6 +39,7 @@ function App() {
       console.log("Comparison saved:", response.data);
     } catch (error) {
       console.error("Error saving comparison:", error);
+      toast.error("Error saving comparison. Please check the server logs.");
     }
   };
 

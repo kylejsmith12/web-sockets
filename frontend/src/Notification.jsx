@@ -1,4 +1,3 @@
-// Notification.js
 import React, { useState, useEffect } from "react";
 import {
   Badge,
@@ -41,6 +40,20 @@ const Notification = () => {
     fetchNotifications();
   }, []);
 
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:4001");
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setNotifications((prevNotifications) => [data, ...prevNotifications]);
+      showToast(data.diff);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   const toggleNotificationCenter = (event) => {
     setAnchorEl(event.currentTarget);
     setIsOpen(!isOpen);
@@ -50,26 +63,8 @@ const Notification = () => {
     setShowUnreadOnly(!showUnreadOnly);
   };
 
-  useEffect(() => {
-    console.log("in here");
-    const ws = new WebSocket("ws://localhost:4001/api");
-    console.log("test: ", ws);
-
-    ws.onmessage = (event) => {
-      console.log("event: ", event);
-      const data = JSON.parse(event.data);
-      setNotifications((prevNotifications) => [data, ...prevNotifications]);
-      showToast(data.diff); // Show toast when a new comparison is received
-    };
-
-    // Cleanup function to close the WebSocket connection
-    // return () => {
-    //   ws.close();
-    // };
-  });
-
   const showToast = (diff) => {
-    toast.info(diff); // Show toast notification for new comparison
+    toast.info(diff);
   };
 
   return (
