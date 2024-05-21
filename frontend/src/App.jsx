@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, AppBar, Toolbar } from "@mui/material";
 import Notification from "./Notification";
 import axios from "axios";
-
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 function App() {
   const [paragraph1, setParagraph1] = useState("");
   const [paragraph2, setParagraph2] = useState("");
@@ -15,9 +15,10 @@ function App() {
     setSocket(ws);
 
     return () => {
-      setTimeout(() => {
-        ws.close();
-      }, 1000); // Delay closing the connection by 1 second
+      // Commenting out the code to close the connection after 1 second
+      // setTimeout(() => {
+      //   ws.close();
+      // }, 1000);
     };
   }, []);
 
@@ -31,20 +32,40 @@ function App() {
 
     socket.addEventListener("message", handleNewComparison);
 
+    socket.addEventListener("open", function (event) {
+      console.log("Connected to WebSocket server");
+    });
+
+    socket.addEventListener("message", function (event) {
+      console.log("Message from server ", event.data);
+    });
+
+    socket.addEventListener("close", function (event) {
+      console.log("Disconnected from WebSocket server");
+    });
+
+    socket.addEventListener("error", function (error) {
+      console.error("WebSocket error observed:", error);
+    });
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("message from server: ", data);
+    };
     return () => {
       socket.removeEventListener("message", handleNewComparison);
     };
   }, [socket]);
 
   const handleCompare = async () => {
-    try {
-      const response = await axios.post("http://localhost:4001/compare", {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({
         paragraph1,
         paragraph2,
       });
-      toast.success(response.data.diff); // Show toast when comparison is successful
-    } catch (error) {
-      console.error("Error submitting comparison", error);
+      socket.send(message);
+    } else {
+      console.error("WebSocket is not open. Cannot send message.");
     }
   };
 

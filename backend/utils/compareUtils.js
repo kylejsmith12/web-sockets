@@ -1,3 +1,4 @@
+// utils/compareUtils.js
 const { diffWords } = require("diff");
 
 const compareAndNotify = (paragraph1, paragraph2) => {

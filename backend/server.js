@@ -1,35 +1,47 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const { Pool } = require("pg");
+const http = require("http");
 const WebSocket = require("ws");
-const routes = require("./routes/api"); // Changed path
+const cors = require("cors");
+const routes = require("./routes/api");
+const pool = require("./db");
 
 const app = express();
 const port = 4001;
 
-const pool = require("./utils/db");
-
 app.use(cors());
-app.use(bodyParser.json());
-app.use(routes(pool)); // Pass pool as a parameter to routes
+app.use(express.json());
+app.use("/api", routes); // Use routes with /api prefix
 
-const server = app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
-
+const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 wss.on("connection", (ws) => {
   console.log("New client connected");
+
+  ws.on("message", (message) => {
+    console.log(`Received message: ${message}`);
+    // Handle incoming messages from clients
+  });
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+  });
+
+  ws.on("error", (error) => {
+    console.error("WebSocket error:", error);
+    // Handle WebSocket errors
+  });
 });
 
-const notifyClients = (data) => {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
-  });
-};
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
 
-module.exports = { notifyClients };
+server.on("error", (error) => {
+  console.error("Server error:", error);
+  // Handle server startup errors
+});
+
+server.on("listening", () => {
+  console.log("Server listening on port", server.address().port);
+});

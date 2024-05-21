@@ -1,3 +1,4 @@
+// Notification.js
 import React, { useState, useEffect } from "react";
 import {
   Badge,
@@ -16,6 +17,8 @@ import {
 import MailIcon from "@mui/icons-material/Mail";
 import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
 import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Notification = () => {
   const [notifications, setNotifications] = useState([]);
@@ -26,7 +29,9 @@ const Notification = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await axios.get("http://localhost:4001/notifications");
+        const response = await axios.get(
+          "http://localhost:4001/api/notifications"
+        );
         setNotifications(response.data);
       } catch (error) {
         console.error("Error fetching notifications", error);
@@ -46,24 +51,36 @@ const Notification = () => {
   };
 
   useEffect(() => {
+    console.log("in here");
     const ws = new WebSocket("ws://localhost:4001");
+    console.log("test: ", ws);
 
     ws.onmessage = (event) => {
+      console.log("event: ", event);
       const data = JSON.parse(event.data);
       setNotifications((prevNotifications) => [data, ...prevNotifications]);
+      showToast(data.diff); // Show toast when a new comparison is received
     };
 
+    // Cleanup function to close the WebSocket connection
     // return () => {
-    //   setTimeout(() => {
-    //     ws.close();
-    //   }, 1000); // Delay closing the connection by 1 second
+    //   ws.close();
     // };
-  }, []);
+  });
+
+  const showToast = (diff) => {
+    toast.info(diff); // Show toast notification for new comparison
+  };
 
   return (
     <Box sx={{ margin: "8px" }}>
       <IconButton size="large" onClick={toggleNotificationCenter}>
-        <Badge badgeContent={notifications.length} color="primary">
+        <Badge
+          badgeContent={
+            notifications.filter((notification) => !notification.read).length
+          }
+          color="primary"
+        >
           <MailIcon color="action" />
         </Badge>
       </IconButton>
@@ -116,7 +133,7 @@ const Notification = () => {
                 {(!notifications.length ||
                   (notifications.length === 0 && showUnreadOnly)) && (
                   <h4>
-                    Your queue is empty! you are all set{" "}
+                    Your queue is empty! You are all set{" "}
                     <span role="img" aria-label="celebration">
                       🎉
                     </span>
