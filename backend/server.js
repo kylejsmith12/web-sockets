@@ -1,9 +1,9 @@
 const express = require("express");
 const http = require("http");
-const WebSocket = require("ws");
 const cors = require("cors");
 const routes = require("./routes/api");
 const pool = require("./db");
+const { setupWebSocketServer } = require("./websocket");
 
 const app = express();
 const port = 4001;
@@ -13,30 +13,7 @@ app.use(express.json());
 app.use("/api", routes); // Use routes with /api prefix
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-wss.on("connection", (ws) => {
-  console.log("New client connected");
-
-  ws.on("message", (message) => {
-    console.log(`Received message: ${message}`);
-    // Handle incoming messages from clients
-    wss.clients.forEach(function each(client) {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send("something");
-      }
-    });
-  });
-
-  ws.on("close", () => {
-    console.log("Client disconnected");
-  });
-
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
-    // Handle WebSocket errors
-  });
-});
+const wss = setupWebSocketServer(server); // Initialize WebSocket server
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

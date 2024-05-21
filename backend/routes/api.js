@@ -1,28 +1,30 @@
-// routes/api.js
+// In routes/api.js
+
 const express = require("express");
 const pool = require("../db");
-const compareUtils = require("../utils/compareUtils");
 const WebSocket = require("ws");
+const { setupWebSocketServer } = require("../websocket");
+const compareUtils = require("../utils/compareUtils");
 
 const router = express.Router();
-const wss = new WebSocket.Server({ noServer: true });
+let wss; // Declare wss variable here
 
-wss.on("connection", (ws) => {
-  console.log("New client connected");
+router.use((req, res, next) => {
+  // Ensure WebSocket server is initialized before setting up routes
+  if (!wss) {
+    const server = req.app.get("server");
+    wss = setupWebSocketServer(server);
+  }
+  next();
 });
-
-const notifyClients = (data) => {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
-  });
-};
 
 router.post("/compare", async (req, res) => {
   const { id, paragraph1, paragraph2 } = req.body;
+
+  // Compare paragraphs using compareUtils
   const diff = compareUtils.compareAndNotify(paragraph1, paragraph2);
 
+  // Insert comparison into database
   const query = `
     INSERT INTO comparisons (id, paragraph1, paragraph2, diff, created_at)
     VALUES ($1, $2, $3, $4, NOW()) RETURNING *;
@@ -31,7 +33,10 @@ router.post("/compare", async (req, res) => {
 
   try {
     const result = await pool.query(query, values);
+
+    // Notify clients about the comparison
     notifyClients(result.rows[0]);
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error("Error processing comparison:", err);
@@ -40,6 +45,7 @@ router.post("/compare", async (req, res) => {
 });
 
 router.get("/notifications", async (req, res) => {
+  // Fetch recent comparisons from the database and return them
   const query = `
     SELECT * FROM comparisons
     WHERE created_at >= NOW() - INTERVAL '1 day'
@@ -52,5 +58,14 @@ router.get("/notifications", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Function to notify clients
+const notifyClients = (data) => {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+};
 
 module.exports = router;

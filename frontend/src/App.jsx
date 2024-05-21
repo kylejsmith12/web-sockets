@@ -4,6 +4,7 @@ import Notification from "./Notification";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { compareAndNotify } from "./utils";
 
 function App() {
   const [paragraph1, setParagraph1] = useState("");
@@ -11,76 +12,40 @@ function App() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:4001/api");
+    const ws = new WebSocket("ws://localhost:4001");
     setSocket(ws);
 
     ws.addEventListener("open", function (event) {
-      console.log("connected to ws server");
-    });
-
-    ws.addEventListener("message", function (event) {
-      console.log("message from server", event.data);
-    });
-
-    return () => {
-      // Commenting out the code to close the connection after 1 second
-      // setTimeout(() => {
-      //   ws.close();
-      // }, 1000);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewComparison = (event) => {
-      const data = JSON.parse(event.data);
-      showToast(data.diff); // Show toast when a new comparison is received
-    };
-
-    socket.addEventListener("message", handleNewComparison);
-
-    socket.addEventListener("open", function (event) {
       console.log("Connected to WebSocket server");
     });
 
-    socket.addEventListener("message", function (event) {
-      console.log("Message from server ", event.data);
+    ws.addEventListener("message", function (event) {
+      console.log("Message from server", event.data);
+      showToast(event.data);
     });
 
-    socket.addEventListener("close", function (event) {
-      console.log("Disconnected from WebSocket server");
-    });
-
-    socket.addEventListener("error", function (error) {
-      console.error("WebSocket error observed:", error);
-    });
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("message from server: ", data);
-    };
     return () => {
-      socket.removeEventListener("message", handleNewComparison);
+      ws.close();
     };
-  }, [socket]);
+  }, []);
 
   const handleCompare = async () => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      const message = JSON.stringify({
+    const diff = compareAndNotify(paragraph1, paragraph2);
+    showToast(diff);
+
+    try {
+      const response = await axios.post("http://localhost:4001/api/compare", {
         paragraph1,
         paragraph2,
       });
-      socket.send(message);
-    } else {
-      console.error("WebSocket is not open. Cannot send message.");
+      console.log("Comparison saved:", response.data);
+    } catch (error) {
+      console.error("Error saving comparison:", error);
     }
   };
 
-  const showToast = (diff) => {
-    // Show toast notification
-    // You can customize the toast message and options as needed
-    console.log("Comparison Diff:", diff);
+  const showToast = (message) => {
+    toast.info(message);
   };
 
   return (
